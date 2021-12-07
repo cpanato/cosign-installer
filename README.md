@@ -38,9 +38,10 @@ jobs:
     name: Install Cosign and test presence in path
     steps:
       - name: Install Cosign
-        uses: sigstore/cosign-installer@main
+        uses: sigstore/cosign-installer@v2
         with:
-          cosign-release: 'v1.3.1'
+          install-only: true
+          version: 'v1.3.1'
       - name: Check install!
         run: cosign version
 ```
@@ -68,6 +69,8 @@ jobs:
     steps:
       - name: Install Cosign
         uses: sigstore/cosign-installer@main
+        with:
+          install-only: true
       - name: Check install!
         run: cosign version
 ```
@@ -104,9 +107,6 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@main
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
       - name: Set up Docker Buildx
@@ -128,28 +128,55 @@ jobs:
 
       - name: Sign image with a key
         run: |
-          echo ${COSIGN_KEY} > /tmp/my_cosign.key && \
-          cosign sign --key /tmp/my_cosign.key ${TAGS}
+          echo ${COSIGN_KEY} > /tmp/my_cosign.key
+        env:
+          COSIGN_KEY: ${{secrets.COSIGN_KEY}}
+
+      - name: Cosign sign
+        uses: sigstore/cosign-installer@main
+        with:
+          args: sign --key /tmp/my_cosign.key ${TAGS}
         env:
           TAGS: ${{ steps.docker_meta.outputs.tags }}
-          COSIGN_KEY: ${{secrets.COSIGN_KEY}}
           COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
 
-      - name: Sign the images with GitHub OIDC **not production ready**
-        run: cosign sign --oidc-issuer https://token.actions.githubusercontent.com ${TAGS}
+      - name: Cosign sign
+        uses: sigstore/cosign-installer@main
+        with:
+          args: sign --oidc-issuer https://token.actions.githubusercontent.com ${TAGS}
         env:
           TAGS: ${{ steps.docker_meta.outputs.tags }}
           COSIGN_EXPERIMENTAL: 1
 ```
 
-### Optional Inputs
-The following optional inputs:
+## Customizing
 
-| Input | Description |
-| --- | --- |
-| `cosign-release` | `cosign` version to use instead of the default. |
+### Inputs
+
+Following inputs can be used as `step.with` keys
+
+| Name             | Type    | Default      | Description                                                      |
+|------------------|---------|--------------|------------------------------------------------------------------|
+| `version`        | String  | `latest`     | `cosign` version to use instead of the default                   |
+| `args`           | String  |              | Arguments to pass to cosign                                      |
+| `workdir`        | String  | `.`          | Working directory (below repository root)                        |
+| `install-only`   | Bool    | `false`      | Just install cosign                                              |
 
 ## Security
 
 Should you discover any security issues, please refer to sigstores [security
 process](https://github.com/sigstore/community/blob/main/SECURITY.md)
+
+
+## Development
+
+```
+# format code and build javascript artifacts
+docker buildx bake pre-checkin
+
+# validate all code has correctly formatted and built
+docker buildx bake validate
+
+# run tests
+docker buildx bake test
+```
