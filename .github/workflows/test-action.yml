@@ -37,7 +37,7 @@ jobs:
     steps:
     - uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846 #v3
     - name: Install Cosign
-      uses: sigstore/cosign-installer@de5c6db865c272bde755152889dbda79bccb85f7 #v1.3.0
+      uses: sigstore/cosign-installer@d6a3abf1bdea83574e28d40543793018b6035605 #v1.3.0
     - name: Check install!
       run: cosign version
     - name: Check root directory
